@@ -1,11 +1,16 @@
 import {useState} from 'react'
 import './App.css'
+import {Button, Slider} from "@mui/material";
+import {Lock, LockOpen} from '@mui/icons-material';
+import {Data} from "./Protocol.ts"
 
 function App() {
-    const [bleData, setBleData] = useState<object>();
+    const [bleData, setBleData] = useState<Data>();
+    const [sliderValue, setSliderValue] = useState<number>(0);
     const [characteristic, setCharacteristic] = useState<BluetoothRemoteGATTCharacteristic>();
     const [isConnected, setIsConnected] = useState<boolean>(false);
     const [error, setError] = useState<string>('');
+    const [isLocked, setIsLocked] = useState<boolean>(false);
 
     const connect = async () => {
         try {
@@ -29,9 +34,10 @@ function App() {
         setInterval(async () => {
             const value = await characteristic?.readValue();
             const decoded = decoder.decode(value!);
-            const jsonValue = JSON.parse(decoded);
+            const jsonValue: Data = JSON.parse(decoded);
             setBleData(jsonValue);
-            console.log(jsonValue["joints"]);
+            console.log(jsonValue["ID"]);
+            setSliderValue(jsonValue?.joints?.joint0?.position || 0);
         }, 1000);
     }
 
@@ -45,12 +51,52 @@ function App() {
         </div>
 
         <div>
-            {// @ts-ignore
-                bleData && bleData["ID"] && <h1>{bleData["ID"]}</h1>}
+            {bleData ? bleData["ID"] : "No data"}
+        </div>
+
+        <div>
+            {bleData?.joints?.joint0?.position || "Position not available"}
         </div>
 
         <div>
             {error && <p>{error}</p>}
+        </div>
+
+        <div style={{position: 'relative', textAlign: 'center'}}>
+            <img src="/assets/RoFI.jpg" alt="RoFI" width="500" />
+            <Button variant="contained" color="primary"
+                onClick={() => {
+                    setIsLocked(!isLocked);
+                }}
+
+                sx={{
+                    position: 'absolute',
+                    top: '68%',
+                    left: '24%',
+                    transform: 'translate(-50%, -50%)',
+                }}
+            >
+                {isLocked ? <Lock /> : <LockOpen />}
+            </Button>
+            <Slider
+                min={0}
+                max={100}
+                value={
+                    sliderValue
+                }
+                // onChange={(_, value) => {
+                //     setSliderValue(value as number);
+                // }}
+                orientation={"vertical"}
+                valueLabelDisplay="auto"
+                sx={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                height: '50%',
+            }}
+            />
         </div>
     </>)
 }
