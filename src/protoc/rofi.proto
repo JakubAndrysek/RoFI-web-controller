@@ -1,0 +1,172 @@
+syntax = "proto3";
+
+message Empty {}
+
+message Descriptor {
+  uint32 count_joint = 1;
+  uint32 count_connector = 2;
+}
+
+message Joint {
+  float max_position = 1;
+  float min_position = 2;
+  float max_speed = 3;
+  float min_speed = 4;
+  float max_torque = 5;
+  float velocity = 6;
+  float position = 7;
+  float torque = 8;
+}
+
+enum ConnectorPosition {
+  RETRACTED = 0;
+  EXTENDED = 1;
+}
+
+enum ConnectorOrientation {
+  NORTH = 0;
+  SOUTH = 1;
+  EAST = 2;
+  WEST = 3;
+}
+
+enum ConnectorLine {
+  INTERNAL = 0;
+  EXTERNAL = 1;
+}
+
+enum LidarDistanceMode {
+  AUTONOMOUS = 0;
+  SHORT = 1;
+  LONG = 2;
+}
+
+enum LidarStatus {
+  ERROR = 0;
+  NOT_MEASURED = 1;
+  OUTSIDE_RANGE = 2;
+  VALID = 3;
+}
+
+enum ConnectorEvent {
+  CONNECT = 0;
+  DISCONNECTED = 1;
+  POWER_CHANGED = 2;
+}
+
+message Connector {
+  ConnectorPosition position = 1;
+  bool internal = 2;
+  bool external = 3;
+  LidarDistanceMode distance_mode = 4;
+  bool connected = 5;
+  ConnectorOrientation orientation = 6;
+  float internal_voltage = 7;
+  float internal_current = 8;
+  float external_voltage = 9;
+  float external_current = 10;
+  LidarStatus lidar_status = 11;
+  uint32 distance = 12;
+}
+
+message RofiStateData {
+  int32 random_number = 1;
+  Descriptor descriptor = 2;
+  repeated Joint joints = 3;
+  repeated Connector connectors = 4;
+
+}
+
+enum RofiStateType {
+  STATE_SUCCESS = 0;
+  STATE_ERROR = 1;
+}
+
+message RofiState {
+  uint32 packet_id = 1;
+  int32 rofi_id = 2;
+  RofiStateType type = 3;
+  oneof state_type {
+    RofiStateData state_data = 4;
+    string error_message = 5;
+  }
+}
+
+enum DeviceCommandType {
+  REBOOT = 0;
+  SET_ID = 1;
+}
+
+message DeviceCommand {
+  DeviceCommandType command = 1;
+  oneof command_type { int32 set_id = 2; }
+}
+
+enum JointCommandType {
+  SET_JOINT_VELOCITY = 0;
+  SET_JOINT_POSITION = 1;
+  SET_JOINT_TORQUE = 2;
+}
+
+message JointSetPosition {
+  float position = 1;
+  float velocity = 2;
+}
+
+message JointCommand {
+  uint32 joint_id = 1;
+  JointCommandType command = 2;
+  oneof command_type {
+    float set_velocity = 3;
+    JointSetPosition set_position = 4;
+    float set_torque = 5;
+  }
+}
+
+enum ConnectorCommandType {
+  SET_CONNECT = 0;
+  SET_DISCONNECT = 1;
+  CONNECT_POWER = 2;
+  DISCONNECT_POWER = 3;
+  SET_DISTANCE_MODE = 4;
+}
+
+message ConnectorCommand {
+  uint32 connector_id = 1;
+  ConnectorCommandType command = 2;
+  oneof command_type {
+    ConnectorLine connect_power = 3;
+    ConnectorLine disconnect_power = 4;
+    LidarDistanceMode set_distance_mode = 5;
+  }
+}
+
+message Message { string message = 1; }
+
+enum CommandTypeRequest {
+  MESSAGE = 0;
+  DEVICE = 1;
+  JOINT = 2;
+  CONNECTOR = 3;
+}
+
+// Request and response messages
+
+// Request is sent from the client to the RoFI
+message RofiRequest {
+  int32 packet_id = 1;
+  CommandTypeRequest command = 3;
+  oneof command_type {
+    Message message = 4;
+    DeviceCommand device = 5;
+    JointCommand joint = 6;
+    ConnectorCommand connector = 7;
+  }
+}
+
+// Response is sent from the RoFI to the client
+message RofiResponse {
+  int32 packet_id = 1;
+  int32 success = 3;
+  string message = 4;
+}
